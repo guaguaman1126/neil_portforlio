@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<body>
+    <p>分數：<span id="score">載入中</span></p>
+    <button id="add-btn">+1</button>
+
+
+
+    <script>
+
+        async function getScore() {
+
+
+            const response = await fetch('/api/score', {
+                method: 'GET'
+            })
+            const data = await response.json();
+            if (!response.ok) { throw new Error(data.error); }
+            const score = data.num;
+            return score;
+
+
+
+
+        }
+
+        async function handleClick() {
+
+            const response = await fetch('/api/score', {
+                method: 'POST'
+            });
+            const data = await response.json();
+            if (!response.ok) { throw new Error(data.error); }
+            const score = data.num;
+            return score;
+
+        }
+
+        function updateScore(score) {
+
+            const scoreSpan = document.getElementById("score");
+            scoreSpan.textContent = score;
+
+        }
+
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            try { updateScore(await getScore()); }
+            catch (error) {
+                console.log(error);
+            }
+        });
+
+        const btn = document.getElementById("add-btn");
+        btn.addEventListener("click", async () => {
+            try { updateScore(await handleClick()); }
+            catch (error) {
+                console.log(error);
+            }
+        })
+
+
+
+
+    </script>
+</body>
+
+</html>

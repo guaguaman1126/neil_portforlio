@@ -1,0 +1,29 @@
+@import url("https://fonts.googleapis.com/css2?family=Chiron+GoRound+TC:wght@200..900&display=swap");
+@import "tailwindcss";
+@plugin "daisyui";
+
+@theme inline {
+  --font-sans: "Chiron GoRound TC", sans-serif;
+}
+
+:where(*) {
+  text-box-trim: trim-both;
+  text-box-edge: text;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: #117A73;
+  background-color: #FBF4F9;
+}
+
+.grid-background {
+  background-image:
+    linear-gradient(to right, #E0E6EA 2px, transparent 2px),
+    linear-gradient(to bottom, #E0E6EA 2px, transparent 2px);
+  background-size: 50px 50px;
+  background-position: 20px 0;
+}
+
+
