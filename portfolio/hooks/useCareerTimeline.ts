@@ -1,15 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { animate } from "motion";
 import { animateScrollTo } from "@/lib/animateScrollTo";
+
 
 // 貓咪與檢查點共用的螢幕基準線。
 export const TIMELINE_BTM = 0.8;
 const BTM = TIMELINE_BTM;
 
+
+
 // 管理出場、顯隱、吸附與最後鎖定。
 export function useCareerTimeline() {
   const middleCatRef = useRef<HTMLDivElement>(null);
+
+  const introPhase = useRef<"waiting" | "falling" | "landed" | "played">("waiting");
 
   // 依序存放國小、國中、高中、大學的文字容器
   const textRefs = useRef<(HTMLDivElement | null)[]>([
@@ -25,14 +31,20 @@ export function useCareerTimeline() {
   const [finished, setFinished] = useState(false);
 
 
+
   const SNAP_DELAY = 250; // 停止捲動 250ms 後吸附
   const TOLERANCE = 1; // 容許 1px 的小數誤差
+
+  const movingCatRef = useRef<HTMLDivElement>(null);
+  const [isFalling, setIsFalling] = useState(false);
 
   useEffect(() => {
     let done = false;
     let autoScrolling = false;
     let stopAnimation: (() => void) | undefined;
     let idleTimer: ReturnType<typeof setTimeout> | undefined;
+
+    let stopIntro: (() => void) | undefined;
 
     function clearIdleTimer() {
       if (idleTimer !== undefined) {
@@ -46,6 +58,63 @@ export function useCareerTimeline() {
       stopAnimation?.();
       stopAnimation = undefined;
       autoScrolling = false;
+    }
+
+    // play開場
+    function playIntro(oldCat: HTMLDivElement) {
+      const cat = movingCatRef.current;
+      if (!cat) return;
+
+      // 先記錄原本 middle cat 的視窗座標。
+      const start = oldCat.getBoundingClientRect();
+      const firstCheckpoint = getCheckpoints()[0];
+      if (firstCheckpoint === null) return;
+
+      introPhase.current = "falling";
+      cancelSnap();
+      setIsFalling(true);
+
+      const startScroll = window.scrollY;
+      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+      const targetScroll = Math.min(startScroll + firstCheckpoint - window.innerHeight * BTM, maxScroll);
+
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      const startTop = Math.max(0, start.top);
+      const endTop = window.innerHeight * BTM;
+      const startLeft = start.left + start.width / 2;
+      const endLeft = window.innerWidth / 2;
+      let canceled = false;
+      // ponytail: 一個進度同時推動兩者，抵達第一站時不會錯開。
+      const animation = animate(0, 1, {
+        duration: reduceMotion ? 0 : 1.2,
+        ease: "easeInOut",
+        onUpdate: (progress) => {
+          cat.style.top = `${startTop + (endTop - startTop) * progress}px`;
+          cat.style.left = `${startLeft + (endLeft - startLeft) * progress}px`;
+          window.scrollTo({ top: startScroll + (targetScroll - startScroll) * progress, behavior: "instant" });
+        },
+      });
+
+      animation.then(() => {
+        if (canceled) return;
+        cat.style.top = `${BTM * 100}%`;
+        cat.style.left = "50%";
+        // 第一站先停住；下一次使用者操作才允許吸附到下一站。
+        introPhase.current = "landed";
+        setIsFalling(false);
+        stopIntro = undefined;
+        checkPosition();
+      });
+
+      stopIntro = () => {
+        canceled = true;
+        animation.stop();
+        introPhase.current = "waiting";
+        setIsFalling(false);
+      };
     }
 
     // 四個檢查點在螢幕上的 Y 座標
@@ -64,11 +133,27 @@ export function useCareerTimeline() {
     // 更新貓咪與圖片文字的顯示狀態
     function checkPosition() {
       if (done) return false;
+      if (introPhase.current === "falling") return false;
 
       const oldCat = middleCatRef.current;
-      if (!oldCat) return false;
+
+      if (!oldCat) {
+        return false;
+      }
 
       const lineY = window.innerHeight * BTM;
+
+      if (introPhase.current === "waiting") {
+        setShowCat(false);
+
+        if (oldCat.getBoundingClientRect().top <= window.innerHeight * 0.2) {
+          playIntro(oldCat);
+        }
+
+        // 開場完成以前，不執行後面的顯示與吸附判斷。
+        return false;
+      }
+
       const active =
         oldCat.getBoundingClientRect().top <= lineY + TOLERANCE;
 
@@ -106,7 +191,7 @@ export function useCareerTimeline() {
     }
 
     // 將最近的文字檢查點捲到 BTM
-    function snapToNearest() {
+    function snapToNext() {
       if (done || !checkPosition()) return;
 
       const lineY = window.innerHeight * BTM;
@@ -114,15 +199,13 @@ export function useCareerTimeline() {
         (point): point is number => point !== null
       );
 
-      if (points.length === 0) return;
-
-      const nearest = points.reduce((best, point) =>
-        Math.abs(point - lineY) < Math.abs(best - lineY)
-          ? point
-          : best
+      const next = points.find((point) =>
+        point > lineY + TOLERANCE
       );
 
-      const distance = nearest - lineY;
+      if (next === undefined) return;
+
+      const distance = next - lineY;
 
       // 已對齊就不用再捲
       if (Math.abs(distance) <= TOLERANCE) return;
@@ -161,8 +244,8 @@ export function useCareerTimeline() {
         return;
       }
 
-      if (active) {
-        idleTimer = setTimeout(snapToNearest, SNAP_DELAY);
+      if (active && introPhase.current === "played") {
+        idleTimer = setTimeout(snapToNext, SNAP_DELAY);
       }
     }
 
@@ -174,7 +257,12 @@ export function useCareerTimeline() {
     }
 
     function onUserInput() {
-      if (!done) cancelSnap();
+      if (done) return;
+
+      cancelSnap();
+      if (introPhase.current === "landed") {
+        introPhase.current = "played";
+      }
     }
 
     function onKeyDown(event: KeyboardEvent) {
@@ -193,6 +281,7 @@ export function useCareerTimeline() {
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
+      stopIntro?.(); // 新增這行
       cancelSnap();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
@@ -208,5 +297,5 @@ export function useCareerTimeline() {
     textRefs.current[index] = element;
   };
 
-  return { middleCatRef, registerText, showCat, revealed, finished };
+  return { middleCatRef, movingCatRef, registerText, showCat, revealed, isFalling, finished };
 }

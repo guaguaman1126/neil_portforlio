@@ -7,7 +7,7 @@ type CatIconProps = {
 export default function CatIcon({ className }: CatIconProps) {
   return (
     <div
-      className={`relative fill aspect-square overflow-hidden rounded-[3vw] bg-[#91CAC4] `}
+      className={`relative fill aspect-square overflow-hidden rounded-[15%] bg-[#91CAC4] `}
     >
       <Image
         src="/電腦貓貓.webp"

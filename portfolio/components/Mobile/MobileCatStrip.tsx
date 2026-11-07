@@ -9,7 +9,7 @@ type CatStripProps = {
 
 export default function CatStrip({ middleCatRef, changePic }: CatStripProps) {
   return (
-    <div className="overflow-hidden pb-[16.4vw]" >
+     <div className="relative z-20 overflow-x-clip pb-[16.4vw]">
       <div className="relative left-1/2 flex w-max -translate-x-1/2 items-center gap-[4.1vw]">
         <Image
           src="/電腦貓貓.webp"

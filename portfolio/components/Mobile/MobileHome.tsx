@@ -1,26 +1,27 @@
 "use client";
 import Image from "next/image";
 import WavyFrame from "../Share/WavyFrame";
-import CatStrip from "./CatStrip";
+import CatStrip from "./MobileCatStrip";
 import { useCareerTimeline, TIMELINE_BTM } from "@/hooks/useCareerTimeline";
 
 export default function MobileHome() {
 
-  const { middleCatRef, registerText, showCat, revealed, finished } =
+  const { middleCatRef, movingCatRef, registerText, showCat, revealed, isFalling, finished } =
     useCareerTimeline();
 
   return (
     <main className="h-full w-full grid-background">
-      {/* 測試用：移動貓咪 */}
+      {/* 移動貓咪 */}
       <div
+        ref={movingCatRef}
         className="pointer-events-none  fixed left-1/2  z-50 -translate-x-1/2"
         style={{
           top: `${TIMELINE_BTM * 100}%`,
-          opacity: showCat && !finished ? 1 : 0,
+          opacity: (showCat || isFalling) && !finished ? 1 : 0,
         }}
       >
         <Image
-          src={revealed[0] ? "/眼鏡貓貓.webp" : "/貓咪下墜.webp"}
+          src={revealed[0] && !isFalling ? "/眼鏡貓貓.webp" : "/貓咪下墜.webp"}
           alt=""
           width={70}
           height={87}
@@ -34,11 +35,14 @@ export default function MobileHome() {
 
         <section className=" w-full flex flex-col items-center justify-center py-[16.4vw] gap-[8.2vw]">
 
-          <p className="text-[5.1vw] w-full">
-            一個很愛亂焦慮的資管大學生。<br />
-            焦慮驅動everything~<br />
-            夢想是可以Work Life Balance身心健康！<br />
-          </p>
+          <div className="text-[5.1vw] leading-[200%] w-full">
+            <span className="box-decoration-clone bg-white px-[1vw] py-[1vw]">
+              一個很愛亂焦慮的資管大學生。<br />
+              焦慮驅動everything~<br />
+              夢想是可以 Work Life Balance
+              <br />保持美好精神狀態🤪<br />
+            </span>
+          </div>
 
           <p className="text-[4vw] w-full ">
             #活網仔<br />
@@ -63,9 +67,9 @@ export default function MobileHome() {
         </section>
       </div>
       <section className="relative">
-        <CatStrip middleCatRef={middleCatRef} changePic={showCat || finished} />
+        <CatStrip middleCatRef={middleCatRef} changePic={showCat || finished || isFalling} />
 
-        <div className="flex w-full flex-col rounded-[18vw] bg-[#F5E8F2] px-[4.1vw] py-[16.4vw] ">
+        <div className="flex w-full flex-col rounded-[13vw] bg-[#F5E8F2] px-[4.1vw] py-[16.4vw] ">
           <div className="w-full">
 
             <p className="text-center text-[5.1vw] ">我的生涯軌跡</p>

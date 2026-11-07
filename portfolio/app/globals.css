@@ -6,6 +6,16 @@
   --font-sans: "Chiron GoRound TC", sans-serif;
 }
 
+@media (width < 768px) {
+  html {
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 :where(*) {
   text-box-trim: trim-both;
   text-box-edge: text;
@@ -23,7 +33,17 @@ body {
     linear-gradient(to right, #E0E6EA 2px, transparent 2px),
     linear-gradient(to bottom, #E0E6EA 2px, transparent 2px);
   background-size: 50px 50px;
-  background-position: 20px 0;
+  background-position: 20px 9px;
 }
 
+@keyframes fadeOut {
 
+  0%,
+  65% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
+}

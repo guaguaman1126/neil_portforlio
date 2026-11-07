@@ -10,15 +10,15 @@ export default function MobileNavbar() {
 
   return (
     <>
-    <MobileMenu isOpen={isMenuOpen} />
-      <header className="w-full">
+      <MobileMenu isOpen={isMenuOpen} onClose={()=> setIsMenuOpen(false) } />
+      <header className="w-full sticky inset-x-0 top-0 z-50 bg-[#FBF4F9]">
         <div className="relative flex w-full items-center justify-center px-[8.2vw] py-[4.1vw]">
 
           <div className="aspect-square w-[12.8vw]">
             <CatIcon />
           </div>
           <label className="absolute right-[8.2vw] top-[5.125vw] h-[9vw] w-[10.2vw] cursor-pointer rounded-[3vw] bg-white text-[#117A73] z-50">
-            <input className="peer sr-only" type="checkbox" aria-label="切換選單" onChange={(event) => setIsMenuOpen(event.target.checked)} />
+            <input className="peer sr-only" type="checkbox" aria-label="切換選單" onChange={(event) => setIsMenuOpen(event.target.checked)} checked={isMenuOpen} />
 
             <svg
               className="absolute left-1/2 top-1/2 h-[5vw] w-[5vw] -translate-x-1/2 -translate-y-1/2 fill-current opacity-100 transition-opacity peer-checked:opacity-0"
@@ -43,7 +43,7 @@ export default function MobileNavbar() {
         </div>
       </header>
 
-     
+
     </>
   );
 }
