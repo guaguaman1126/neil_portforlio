@@ -1,4 +1,5 @@
 
+import DeskResume from "@/components/Desktop/DeskResume";
 import MobileResume from "@/components/Mobile/MobileResume";
 
 
@@ -9,9 +10,9 @@ export default function Resume() {
         <MobileResume />
       </div>
 
-      <div className="hidden md:block">
-        {/* <DesktopResume /> */}
-      </div>
+      {/* <div className="hidden md:block"> */}
+        <DeskResume />
+      {/* </div> */}
     </>
   );
 }

@@ -86,18 +86,18 @@ export function useDesktopCatIntro() {
       // 動畫開始時，頁面已經捲動的距離
       const startScroll = window.scrollY;
 
-      // section 上緣對齊 Navbar 下緣時的頁面捲動位置
+      // 高容器起點對齊 Navbar，避免 sticky 已黏住時落到動畫中途。
       const targetScroll =
         startScroll +
-        section.getBoundingClientRect().top -
+        section.parentElement!.getBoundingClientRect().top -
         navbar.getBoundingClientRect().bottom;
 
-      // 頁面接下來要捲動的距離
-      const scrollDistance = targetScroll - startScroll;
+
 
       // 預測頁面捲完後，落地貓咪在視窗上的位置
       const endLeft = landing.left;
-      const endTop = landing.top - scrollDistance;
+      const endTop = navbar.getBoundingClientRect().bottom +
+        landing.top - section.getBoundingClientRect().top;
 
       // 先把下墜貓咪放到出發貓咪的位置
       movingCat.style.left = `${start.left}px`;

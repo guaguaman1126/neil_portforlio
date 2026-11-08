@@ -5,7 +5,7 @@ import { SiGmail } from "react-icons/si";
 
 const email = "n127036819@gmail.com";
 
-export default function EmailLink() {
+export default function DeskEmailLink() {
   const [message, setMessage] = useState("");
 
   async function copyEmail() {
@@ -31,7 +31,7 @@ export default function EmailLink() {
       {message && (
         <div
           role="status"
-          className="absolute  bottom-full left-1/2 z-50 w-max -translate-x-1/2  rounded-[2vw] bg-white/50 px-[2vw] py-[2vw] text-[4.1vw] text-[#91CAC4] animate-[fadeOut_2.7s_forwards]"
+          className="absolute  bottom-full left-1/2 z-50 w-max -translate-x-1/2  rounded-[0.5vw] bg-white/50 px-[0.5vw] py-[0.5vw] text-[1.11vw] text-[#91CAC4] animate-[fadeOut_2.7s_forwards]"
         >
           {message}
         </div>

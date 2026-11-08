@@ -3,10 +3,12 @@ import Image from "next/image";
 import WavyFrame from "../Share/WavyFrame";
 import SpecWavyFrame from "../Desktop/SpecWavyFrame";
 
+import { animateScrollTo } from "@/lib/animateScrollTo";
 import { useEffect, useRef } from "react";
 import { useDesktopCatIntro } from "@/hooks/useDesktopCatIntro";
 import { motion, useScroll, useTransform } from "motion/react";
 import type { MotionValue } from "motion/react";
+
 
 
 const stages = [
@@ -41,68 +43,150 @@ export default function PCHome() {
 
   const { sectionRef, sourceCatRef, landingCatRef, movingCatRef, introPhase } =
     useDesktopCatIntro();
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  const { scrollXProgress } = useScroll({
-    container: carouselRef,
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ["start 5.55vw", "end end"],
   });
 
-  // 配合下面的四等分時間軸
-  const catLeft = useTransform(
-    scrollXProgress,
+  const catLeft = useTransform(scrollYProgress, [0, 1], ["12.5%", "87.5%"]);
+  // ponytail: 每張寬 64.44vw、間距 3vw；與下面的圖片列尺寸一起調整。
+  const imagesX = useTransform(
+    scrollYProgress,
     [0, 1],
-    ["12.5%", "87.5%"],
+    ["0vw", `${-(64.44 + 3) * (stages.length - 1)}vw`],
   );
 
-  // section 對齊後，將上下滾輪轉成圖片的水平移動
+  
+
   useEffect(() => {
+    // 開場完成後，才開始監聽吸附
     if (introPhase !== "finished") return;
 
-    const section = sectionRef.current;
-    const carousel = carouselRef.current;
-    const navbar = document.querySelector("header");
-    if (!section || !carousel || !navbar) return;
+    const SNAP_DELAY = 100;
 
-    const getDistance = () =>
-      section.getBoundingClientRect().top - navbar.getBoundingClientRect().bottom;
-    const atStart = () => carousel.scrollLeft <= 1;
-    const atEnd = () =>
-      carousel.scrollLeft >= carousel.scrollWidth - carousel.clientWidth - 1;
-    function handleWheel(event: WheelEvent) {
-      if (!carousel) return;
-      // 保留縮放與原生水平滾動，且只接管可取消的垂直滾輪事件。
-      if (event.ctrlKey || event.deltaY === 0 || !event.cancelable) return;
+    let isSnapping = false;
+    let stopAnimation: (() => void) | undefined;
+    let idleTimer: ReturnType<typeof setTimeout> | undefined;
 
-      // 統一換算成像素；滑鼠和觸控板的 deltaMode 可能不同
-      const deltaY =
-        event.deltaMode === WheelEvent.DOM_DELTA_LINE
-          ? event.deltaY * 16
-          : event.deltaMode === WheelEvent.DOM_DELTA_PAGE
-            ? event.deltaY * window.innerHeight
-            : event.deltaY;
+    function clearIdleTimer() {
+      clearTimeout(idleTimer);
+      idleTimer = undefined;
+    }
 
-      if (Math.abs(getDistance()) > 2) return;
-      // 第一張再往上，或最後一張再往下：交還頁面捲動
-      if ((atStart() && deltaY < 0) || (atEnd() && deltaY > 0)) {
+    function snapToNearest() {
+      idleTimer = undefined;
+
+      const timeline = timelineRef.current;
+      if (!timeline || isSnapping) return;
+
+      const rect = timeline.getBoundingClientRect();
+      const timelineTop = window.scrollY + rect.top;
+
+      const startScroll =
+        timelineTop - window.innerWidth * 0.0555;
+
+      const endScroll =
+        timelineTop + rect.height - window.innerHeight;
+
+      // 輪播外不吸附，讓使用者可以正常離開
+      if (
+        window.scrollY <= startScroll ||
+        window.scrollY >= endScroll
+      ) {
         return;
       }
 
-      // 只有這裡會阻止頁面的垂直捲動
-      event.preventDefault();
+      // 等待結束後，才讀取最新位置
+      const progress =
+        (window.scrollY - startScroll) /
+        (endScroll - startScroll);
 
-      // 往下滾時，scrollLeft 增加，照片往左移
-      carousel.scrollLeft += deltaY;
+      const nearestIndex = Math.round(
+        progress * (stages.length - 1),
+      );
+
+      const targetProgress =
+        nearestIndex / (stages.length - 1);
+
+      const targetScroll =
+        startScroll +
+        (endScroll - startScroll) * targetProgress;
+
+      if (Math.abs(targetScroll - window.scrollY) < 1) return;
+
+      isSnapping = true;
+
+      stopAnimation = animateScrollTo(targetScroll, () => {
+        isSnapping = false;
+        stopAnimation = undefined;
+      });
     }
 
-    // 要呼叫 preventDefault，必須設為 passive: false
-    window.addEventListener("wheel", handleWheel, { passive: false });
+    function scheduleSnap() {
+      clearIdleTimer();
+      idleTimer = setTimeout(snapToNearest, SNAP_DELAY);
+    }
+
+    function handleScroll() {
+      // 自動動畫產生的捲動，不安排下一次吸附
+      if (isSnapping) return;
+
+      scheduleSnap();
+    }
+
+    function handleUserInput() {
+      // 使用者重新操作，立即停止動畫
+      stopAnimation?.();
+      stopAnimation = undefined;
+      isSnapping = false;
+
+      // 即使這次操作沒有造成位移，也重新等待
+      scheduleSnap();
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      const scrollKeys = [
+        "ArrowUp",
+        "ArrowDown",
+        "PageUp",
+        "PageDown",
+        "Home",
+        "End",
+        " ",
+      ];
+
+      if (scrollKeys.includes(event.key)) {
+        handleUserInput();
+      }
+    }
+
+    function handleResize() {
+      clearIdleTimer();
+      stopAnimation?.();
+      stopAnimation = undefined;
+      isSnapping = false;
+    }
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("wheel", handleUserInput, { passive: true });
+    window.addEventListener("touchmove", handleUserInput, { passive: true });
+    window.addEventListener("pointerdown", handleUserInput, { passive: true });
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("resize", handleResize);
 
     return () => {
-      window.removeEventListener("wheel", handleWheel);
+      clearIdleTimer();
+      stopAnimation?.();
+
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("wheel", handleUserInput);
+      window.removeEventListener("touchmove", handleUserInput);
+      window.removeEventListener("pointerdown", handleUserInput);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("resize", handleResize);
     };
-  }, [introPhase, sectionRef]);
-
-
+  }, [introPhase]);
 
   return (
     <main className="h-full w-full grid-background pb-[8.8vw]">
@@ -164,7 +248,9 @@ export default function PCHome() {
               className="h-auto w-[11.1vw]"
             />
           </div>
+
         </div>
+
 
 
         <div className="flex w-[50%] flex-col gap-[4.44vw] pl-[4.44vw]">
@@ -200,86 +286,84 @@ export default function PCHome() {
         </div>
       </section>
 
-      <section
-        className="flex h-[calc(100vh-5.55vw)] w-full flex-col items-center justify-center gap-[1.38vw] rounded-[5vw] bg-[#F5E8F2] py-[2.22vw] overflow-hidden"
-        ref={sectionRef}
-      >
-
-
-        {/* 圖片輪播 */}
-        <div
-          ref={carouselRef}
-          className="carousel carousel-center min-h-0 w-full flex-1 gap-[3vw] overflow-y-hidden"
-          style={{
-            paddingInline: "max(0px, calc((100% - 64.44vw) / 2))",
-            // 暫時測試：讓程式直接控制位置
-            // scrollSnapType: "none",
-            // scrollBehavior: "auto",
-          }}
+      <div ref={timelineRef} className="relative h-[350vh]  ">
+        <section
+          className="sticky top-[5.55vw] flex h-[calc(100vh-5.55vw)] w-full flex-col items-center justify-center gap-[1.38vw] rounded-[5vw] bg-[#F5E8F2] py-[2.22vw] overflow-hidden"
+          ref={sectionRef}
         >
-          {stages.map((stage) => (
-            <div
-              key={stage.label}
-              className="carousel-item h-full w-[64.44vw]"
+
+
+          {/* 圖片列：只改變位置，頁面維持原生垂直捲動。 */}
+          <div className="min-h-0 w-full flex-1 overflow-hidden">
+            <motion.div
+              className="flex h-full w-full gap-[3vw]"
+              style={{
+                x: imagesX,
+                paddingLeft: "max(0px, calc((100% - 64.44vw) / 2))",
+              }}
             >
-              <SpecWavyFrame
-                frameLength="long"
-                orientation="horizontal"
-                imageSrc={stage.image}
-              />
-            </div>
-          ))}
-        </div>
-
-
-
-        {/* 說明 */}
-        <div className="grid w-[64.44vw] shrink-0 px-[4.44vw] text-center">
-          {stages.map((stage, index) => (
-            <StageDescription
-              key={stage.label}
-              stage={stage}
-              index={index}
-              progress={scrollXProgress}
-            />
-          ))}
-        </div>
-
-        {/* 貓咪移動區域 */}
-        <div className="flex w-full shrink-0 flex-col items-center px-[4.44vw]">
-          <div className="relative h-[8vw] w-full">
-            {/* 白線 */}
-            <div className="absolute left-1/2 top-1/2 h-[0.3vw] w-[91.11vw] -translate-x-1/2 -translate-y-1/2 bg-white rounded-full" />
-
-            {/* 貓咪移動範圍：和下面標籤同寬 */}
-            <div className="relative mx-auto h-full w-[64.44vw]">
-              <motion.div
-                ref={landingCatRef}
-                className="absolute top-[50%] -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  left: catLeft,
-                  visibility: introPhase === "falling" ? "hidden" : "visible",
-                }}
-              >
-                <Image
-                  src="/眼鏡貓貓.webp"
-                  alt=""
-                  width={160}
-                  height={160}
-                  className="h-auto w-[4.44vw]"
-                />
-              </motion.div>
-            </div>
+              {stages.map((stage) => (
+                <div key={stage.label} className="h-full w-[64.44vw] shrink-0">
+                  <SpecWavyFrame
+                    frameLength="long"
+                    orientation="horizontal"
+                    imageSrc={stage.image}
+                  />
+                </div>
+              ))}
+            </motion.div>
           </div>
 
-          <div className="grid w-[64.44vw] grid-cols-4 text-center text-[1.11vw]">
-            {stages.map((stage) => (
-              <div key={stage.label}>{stage.label}</div>
+
+
+          {/* 說明 */}
+          <div className="grid w-[64.44vw] shrink-0 px-[4.44vw] text-center">
+            {stages.map((stage, index) => (
+              <StageDescription
+                key={stage.label}
+                stage={stage}
+                index={index}
+                progress={scrollYProgress}
+              />
             ))}
           </div>
-        </div>
 
-      </section>
+          {/* 貓咪移動區域 */}
+          <div className="flex w-full shrink-0 flex-col items-center px-[4.44vw]">
+            <div className="relative h-[8vw] w-full">
+              {/* 白線 */}
+              <div className="absolute left-1/2 top-1/2 h-[0.3vw] w-[91.11vw] -translate-x-1/2 -translate-y-1/2 bg-white rounded-full" />
+
+              {/* 貓咪移動範圍：和下面標籤同寬 */}
+              <div className="relative mx-auto h-full w-[64.44vw]">
+                <motion.div
+                  ref={landingCatRef}
+                  className="absolute top-[50%] -translate-x-1/2 -translate-y-1/2"
+                  style={{
+                    left: catLeft,
+                    visibility: introPhase === "falling" ? "hidden" : "visible",
+                  }}
+                >
+                  <Image
+                    src="/眼鏡貓貓.webp"
+                    alt=""
+                    width={160}
+                    height={160}
+                    className="h-auto w-[4.44vw]"
+                  />
+                </motion.div>
+              </div>
+            </div>
+
+            <div className="grid w-[64.44vw] grid-cols-4 text-center text-[1.11vw]">
+              {stages.map((stage) => (
+                <div key={stage.label}>{stage.label}</div>
+              ))}
+            </div>
+          </div>
+
+        </section>
+      </div>
 
     </main >
 

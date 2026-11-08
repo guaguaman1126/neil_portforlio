@@ -7,7 +7,7 @@ import { FaJava } from "react-icons/fa6";
 import { FaGithub } from "react-icons/fa";
 import { FaLinkedin } from "react-icons/fa";
 import { GrMysql } from "react-icons/gr";
-import EmailLink from "../Share/EmailLink";
+import EmailLink from "./MobileEmailLink";
 
 
 export default function MobileResume() {

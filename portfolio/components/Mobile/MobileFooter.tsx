@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaInstagram } from "react-icons/fa";
-import EmailLink from "../Share/EmailLink";
+import EmailLink from "./MobileEmailLink";
 import { FaGithub } from "react-icons/fa";
 import { FaLinkedin } from "react-icons/fa";
 
