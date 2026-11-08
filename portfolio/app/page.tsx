@@ -6,13 +6,13 @@ export default function Home() {
 
   return (
     <>
-      {/* <div className="md:hidden">
+      <div className="md:hidden">
         <MobileHome />
-      </div> */}
+      </div>
 
-      {/* <div className="hidden md:block"> */}
+      <div className="hidden md:block">
         <DeskHome />
-      {/* </div> */}
+      </div>
     </>
   );
 
