@@ -14,10 +14,9 @@ export default function SpecWavyFrame({
   className,
 }: WavyFrameProps) {
 
-  const frameName = frameLength === "long" ? "長" : "短";
-  const suffix = orientation === "vertical" ? "-直" : "-橫";
-  const frameSrc = `/框/${frameName}框${suffix}.svg`;
-  const maskSrc = `/框/${frameName}框${suffix}-mask.svg`;
+  const frameName = `${frameLength}-frame-${orientation}`;
+  const frameSrc = `/frame/${frameName}.svg`;
+  const maskSrc = `/frame/${frameName}-mask.svg`;
   const [longSide, shortSide] = frameLength === "long" ? [984, 484] : [716, 486];
   const ratio = orientation === "horizontal" ? longSide / shortSide : shortSide / longSide;
 
