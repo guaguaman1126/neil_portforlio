@@ -10,9 +10,9 @@ export default function Resume() {
         <MobileResume />
       </div>
 
-      {/* <div className="hidden md:block"> */}
+      <div className="hidden md:block">
         <DeskResume />
-      {/* </div> */}
+      </div>
     </>
   );
 }
