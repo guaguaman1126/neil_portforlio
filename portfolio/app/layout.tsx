@@ -20,26 +20,26 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="h-full w-full">
 
         {/* 手機版 Navbar：小於 md 時顯示 */}
-        {/* <div className="md:hidden"> 
+        <div className="md:hidden"> 
           <MobileNavbar />
-        </div>  */}
+        </div> 
 
         {/* 電腦版 Navbar：md 以上顯示 */}
-        {/* <div className="hidden md:block"> */}
+        <div className="hidden md:block">
           <DeskNavbar />
-        {/* </div> */}
+        </div>
 
         {children}
 
         {/* 手機版 Footer */}
-        {/* <div className="md:hidden">
+        <div className="md:hidden">
           <MobileFooter />
-        </div> */}
+        </div>
 
         {/* 電腦版 Footer */}
-        {/* <div className="hidden md:block"> */}
+        <div className="hidden md:block">
           <DeskFooter />
-        {/* </div> */}
+        </div>
 
       </body>
     </html>
