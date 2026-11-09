@@ -18,7 +18,7 @@ export default function MobileProject() {
             <div className="py-[4.1vw] ">
               <WavyFrame
                 frameLength="short"
-                orientation="vertical"
+                orientation="horizontal"
                 imageSrc="/圖片/作品集.png"
                 className="mb-[4.1vw]"
               />

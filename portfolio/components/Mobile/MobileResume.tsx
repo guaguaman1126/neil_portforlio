@@ -14,7 +14,7 @@ export default function MobileResume() {
   return (
     <main className="w-full grid-background ">
 
-      <section className="relative w-full h-[calc(100dvh-21vw-3vw)] overflow-hidden"
+      <section className="relative w-full h-[calc(100dvh-21vw-3vh)] overflow-hidden"
         role="img"
         aria-label="電腦貓貓"
         style={{

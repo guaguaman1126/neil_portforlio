@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { FaInstagram } from "react-icons/fa";
-import { SiJavascript, SiMysql, SiNextdotjs, SiNodedotjs, SiReact, SiFigma, SiGithub } from "react-icons/si";
+import { SiJavascript, SiNextdotjs, SiNodedotjs, SiReact, SiFigma, SiGithub } from "react-icons/si";
 import { FaJava } from "react-icons/fa6";
 import { FaGithub } from "react-icons/fa";
 import { FaLinkedin } from "react-icons/fa";
@@ -14,7 +14,7 @@ export default function MobileResume() {
   return (
     <main className="w-full grid-background ">
 
-      <section className="relative w-full h-[calc(100dvh-5.5vw-2vh)] overflow-hidden"
+      <section className="relative w-full h-[calc(100dvh-5.5vw-3vh)] overflow-hidden"
         role="img"
         aria-label="電腦貓貓"
         style={{
@@ -78,27 +78,42 @@ export default function MobileResume() {
       </div>
 
       <section className="w-full py-[8.88vw] px-[17.77vw]">
-        <div className="w-full mb-[2vw] border-t-[0.7vw] border-[#16877e] rounded-full"></div>
-        <p className="text-[5.12vw] mb-[8.2vw]">技術技能</p>
-        <p className="text-[5.12vw] mb-[4.1vw]">Programming & Data</p>
-        <div className="mb-[8.2vw] flex items-center gap-[4.1vw] text-[16.4vw]">
-          <SiJavascript title="JavaScript" />
-          <GrMysql title="MySQL" />
-          <FaJava title="Java" />
+        <div>
+          <div className="w-full border-t-[0.3vw] border-[#16877e] rounded-full"></div>
+          <p className="text-[1.66vw] mb-[2.22vw]">技術技能</p>
+          
+          <div className="w-full flex justify-between gap-[4.44vw] mb-[8.88vw]">
+          {/* <div className="grid w-full grid-cols-[4fr_6fr]  mb-[8.88vw]"> */}
+            <div>
+              <p className="text-[1.38vw] mb-[1.11vw]">Programming & Data</p>
+              <div className=" flex items-center gap-[2.22vw] text-[5vw]">
+                <SiJavascript title="JavaScript" />
+                <GrMysql title="MySQL" />
+                <FaJava title="Java" />
+              </div>
+            </div>
+
+
+            <div>
+              <p className="text-[1.38vw] mb-[1.11vw]">Web Development</p>
+              <div className="flex items-center gap-[2.22vw] text-[5vw]">
+                <SiNextdotjs title="Next.js" />
+                <SiNodedotjs title="Node.js" />
+                <SiReact title="React" />
+                <SiFigma title="Figma" />
+                <SiGithub title="GitHub" />
+              </div>
+            </div>
+          </div>
+
         </div>
-        <p className="text-[5.12vw] mb-[4.1vw]">Web Development</p>
-        <div className="mb-[16.4vw] flex items-center gap-[4.1vw] text-[16.4vw]">
-          <SiNextdotjs title="Next.js" />
-          <SiNodedotjs title="Node.js" />
-          <SiReact title="React" />
-          <SiFigma title="Figma" />
-          <SiGithub title="GitHub" />
-        </div>
-        <div className="w-full mb-[2vw] border-t-[0.7vw] border-[#16877e] rounded-full"></div>
-        <p className="text-[5.12vw] mb-[8.2vw]">社團經歷</p>
-        <p className="text-[4.1vw] ">政大 Soobi 社 | 副社長</p>
-        <p className="text-[3.6vw] mb-[4.1vw]">September 2025 - August 2026</p>
-        <p className=" text-[3.6vw] mb-[4.1vw]">
+
+
+        <div className="w-full border-t-[0.3vw] border-[#16877e] rounded-full"></div>
+        <p className="text-[1.66vw] mb-[2.22vw]">社團經歷</p>
+        <p className="text-[1.38vw]  ">政大 Soobi 社 | 副社長</p>
+        <p className="text-[1.11vw] mb-[1.11vw]">September 2025 - August 2026</p>
+        <p className=" text-[1.11vw] ">
           • 運用 Meowbit 與 micro:bit 進行 STEM 課程教學。
           <br />• 為 30 名國小學童舉辦為期五天的營隊活動。</p>
 
