@@ -16,7 +16,7 @@ export default function MobileHome() {
         ref={movingCatRef}
         className="pointer-events-none  fixed left-1/2  z-50 -translate-x-1/2"
         style={{
-          top: `${TIMELINE_BTM * 100}%`,
+          top: `${TIMELINE_BTM * 100}lvh`,
           opacity: (showCat || isFalling) && !finished ? 1 : 0,
         }}
       >

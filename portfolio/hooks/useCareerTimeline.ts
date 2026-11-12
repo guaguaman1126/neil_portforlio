@@ -39,6 +39,24 @@ export function useCareerTimeline() {
   const [isFalling, setIsFalling] = useState(false);
 
   useEffect(() => {
+    // ponytail: 讓 CSS 換算 100lvh，JS 與貓咪共用同一個高度基準。
+    const viewportMeasure = document.createElement("div");
+    viewportMeasure.style.cssText =
+      "position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none;";
+    viewportMeasure.setAttribute("aria-hidden", "true");
+    document.body.appendChild(viewportMeasure);
+
+    function getViewportHeight() {
+      return viewportMeasure.getBoundingClientRect().height;
+    }
+
+    function getMaxScroll() {
+      const scroller = document.scrollingElement ?? document.documentElement;
+      return Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    }
+
+    let previousWidth = window.innerWidth;
+    let previousHeight = getViewportHeight();
     let done = false;
     let autoScrolling = false;
     let stopAnimation: (() => void) | undefined;
@@ -119,15 +137,15 @@ export function useCareerTimeline() {
         setIsFalling(true);
 
         const startScroll = window.scrollY;
-        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-        const targetScroll = Math.max(0, Math.min(startScroll + firstCheckpoint - window.innerHeight * BTM, maxScroll));
+        const maxScroll = getMaxScroll();
+        const targetScroll = Math.max(0, Math.min(startScroll + firstCheckpoint - getViewportHeight() * BTM, maxScroll));
 
         const reduceMotion = window.matchMedia(
           "(prefers-reduced-motion: reduce)"
         ).matches;
 
         const startTop = Math.max(0, start.top);
-        const endTop = window.innerHeight * BTM;
+        const endTop = getViewportHeight() * BTM;
         const startLeft = start.left + start.width / 2;
         const endLeft = window.innerWidth / 2;
         // ponytail: 一個進度同時推動兩者，抵達第一站時不會錯開。
@@ -143,7 +161,7 @@ export function useCareerTimeline() {
 
         animation.then(() => {
           if (canceled) return;
-          cat.style.top = `${BTM * 100}%`;
+          cat.style.top = `${BTM * 100}lvh`;
           cat.style.left = "50%";
           // 第一站先停住；下一次使用者操作才允許吸附到下一站。
           introPhase.current = "landed";
@@ -189,12 +207,12 @@ export function useCareerTimeline() {
         return false;
       }
 
-      const lineY = window.innerHeight * BTM;
+      const lineY = getViewportHeight() * BTM;
 
       if (introPhase.current === "waiting") {
         setShowCat(false);
 
-        if (oldCat.getBoundingClientRect().top <= window.innerHeight * 0.2) {
+        if (oldCat.getBoundingClientRect().top <= getViewportHeight() * 0.2) {
           playIntro(oldCat);
         }
 
@@ -242,7 +260,7 @@ export function useCareerTimeline() {
     function snapToNext() {
       if (done || !checkPosition()) return;
 
-      const lineY = window.innerHeight * BTM;
+      const lineY = getViewportHeight() * BTM;
       const points = getCheckpoints().filter(
         (point): point is number => point !== null
       );
@@ -259,10 +277,7 @@ export function useCareerTimeline() {
       if (Math.abs(distance) <= TOLERANCE) return;
 
       // 頁面有最大捲動範圍，不能超過底部
-      const maxScroll = Math.max(
-        0,
-        document.documentElement.scrollHeight - window.innerHeight
-      );
+      const maxScroll = getMaxScroll();
 
       const targetScroll = Math.max(
         0,
@@ -300,6 +315,13 @@ export function useCareerTimeline() {
     function onResize() {
       if (done) return;
 
+      const width = window.innerWidth;
+      const height = getViewportHeight();
+      // 網址列伸縮而 lvh 與寬度未變時，不中斷吸附。
+      if (width === previousWidth && height === previousHeight) return;
+      previousWidth = width;
+      previousHeight = height;
+
       cancelSnap();
       checkPosition();
     }
@@ -331,6 +353,7 @@ export function useCareerTimeline() {
     return () => {
       stopIntro?.(); // 新增這行
       cancelSnap();
+      viewportMeasure.remove();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       window.removeEventListener("wheel", onUserInput);
