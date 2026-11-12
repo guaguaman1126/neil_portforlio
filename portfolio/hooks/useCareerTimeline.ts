@@ -60,58 +60,106 @@ export function useCareerTimeline() {
       autoScrolling = false;
     }
 
+    function lockPageScroll() {
+      const html = document.documentElement;
+      const body = document.body;
+      const htmlOverflow = html.style.overflow;
+      const bodyOverflow = body.style.overflow;
+
+      function preventScroll(event: Event) {
+        if (event.cancelable) event.preventDefault();
+      }
+
+      function preventScrollKeys(event: KeyboardEvent) {
+        if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End", " "].includes(event.key)) {
+          event.preventDefault();
+        }
+      }
+
+      // ponytail: 先測試 overflow 鎖定；若手機仍保留慣性，再改固定頁面。
+      html.style.overflow = "hidden";
+      body.style.overflow = "hidden";
+      window.addEventListener("touchmove", preventScroll, { passive: false });
+      window.addEventListener("wheel", preventScroll, { passive: false });
+      window.addEventListener("keydown", preventScrollKeys);
+
+      return () => {
+        html.style.overflow = htmlOverflow;
+        body.style.overflow = bodyOverflow;
+        window.removeEventListener("touchmove", preventScroll);
+        window.removeEventListener("wheel", preventScroll);
+        window.removeEventListener("keydown", preventScrollKeys);
+      };
+    }
+
     // play開場
     function playIntro(oldCat: HTMLDivElement) {
       const cat = movingCatRef.current;
       if (!cat) return;
 
-      // 先記錄原本 middle cat 的視窗座標。
-      const start = oldCat.getBoundingClientRect();
-      const firstCheckpoint = getCheckpoints()[0];
-      if (firstCheckpoint === null) return;
+      if (getCheckpoints()[0] === null) return;
 
       introPhase.current = "falling";
       cancelSnap();
-      setIsFalling(true);
-
-      const startScroll = window.scrollY;
-      const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-      const targetScroll = Math.min(startScroll + firstCheckpoint - window.innerHeight * BTM, maxScroll);
-
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
-
-      const startTop = Math.max(0, start.top);
-      const endTop = window.innerHeight * BTM;
-      const startLeft = start.left + start.width / 2;
-      const endLeft = window.innerWidth / 2;
+      const unlockScroll = lockPageScroll();
       let canceled = false;
-      // ponytail: 一個進度同時推動兩者，抵達第一站時不會錯開。
-      const animation = animate(0, 1, {
-        duration: reduceMotion ? 0 : 1.2,
-        ease: "easeInOut",
-        onUpdate: (progress) => {
-          cat.style.top = `${startTop + (endTop - startTop) * progress}px`;
-          cat.style.left = `${startLeft + (endLeft - startLeft) * progress}px`;
-          window.scrollTo({ top: startScroll + (targetScroll - startScroll) * progress, behavior: "instant" });
-        },
-      });
+      let stopMotion: (() => void) | undefined;
 
-      animation.then(() => {
+      // 鎖定後下一個畫面更新時機，重新量測再播放。
+      const frameId = requestAnimationFrame(() => {
         if (canceled) return;
-        cat.style.top = `${BTM * 100}%`;
-        cat.style.left = "50%";
-        // 第一站先停住；下一次使用者操作才允許吸附到下一站。
-        introPhase.current = "landed";
-        setIsFalling(false);
-        stopIntro = undefined;
-        checkPosition();
+        const firstCheckpoint = getCheckpoints()[0];
+        if (firstCheckpoint === null) {
+          unlockScroll();
+          introPhase.current = "waiting";
+          stopIntro = undefined;
+          return;
+        }
+        const start = oldCat.getBoundingClientRect();
+        setIsFalling(true);
+
+        const startScroll = window.scrollY;
+        const maxScroll = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+        const targetScroll = Math.max(0, Math.min(startScroll + firstCheckpoint - window.innerHeight * BTM, maxScroll));
+
+        const reduceMotion = window.matchMedia(
+          "(prefers-reduced-motion: reduce)"
+        ).matches;
+
+        const startTop = Math.max(0, start.top);
+        const endTop = window.innerHeight * BTM;
+        const startLeft = start.left + start.width / 2;
+        const endLeft = window.innerWidth / 2;
+        // ponytail: 一個進度同時推動兩者，抵達第一站時不會錯開。
+        const animation = animate(0, 1, {
+          duration: reduceMotion ? 0 : 1.2,
+          ease: "easeInOut",
+          onUpdate: (progress) => {
+            cat.style.top = `${startTop + (endTop - startTop) * progress}px`;
+            cat.style.left = `${startLeft + (endLeft - startLeft) * progress}px`;
+            window.scrollTo({ top: startScroll + (targetScroll - startScroll) * progress, behavior: "instant" });
+          },
+        });
+
+        animation.then(() => {
+          if (canceled) return;
+          cat.style.top = `${BTM * 100}%`;
+          cat.style.left = "50%";
+          // 第一站先停住；下一次使用者操作才允許吸附到下一站。
+          introPhase.current = "landed";
+          setIsFalling(false);
+          unlockScroll();
+          stopIntro = undefined;
+          checkPosition();
+        });
+        stopMotion = () => animation.stop();
       });
 
       stopIntro = () => {
         canceled = true;
-        animation.stop();
+        cancelAnimationFrame(frameId);
+        stopMotion?.();
+        unlockScroll();
         introPhase.current = "waiting";
         setIsFalling(false);
       };
@@ -257,7 +305,7 @@ export function useCareerTimeline() {
     }
 
     function onUserInput() {
-      if (done) return;
+      if (done || introPhase.current === "falling") return;
 
       cancelSnap();
       if (introPhase.current === "landed") {
